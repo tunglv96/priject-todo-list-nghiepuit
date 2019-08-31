@@ -13,15 +13,24 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      tasks : [], // id : ko trung, name, status.
+      tasks: [], // id : ko trung, name, status.
       isDisplayForm: false,
-      taskEditing: null
+      taskEditing: null,
+      filter: {
+        name: '',
+        status: -1,
+      },
+      keyword: '',
+      sort: {
+        by: '',
+        value: 1
+      }
     }
   }
 
   componentDidMount() {
     // console.log('componentDidMount');
-    if(localStorage && localStorage.getItem('tasks')){
+    if (localStorage && localStorage.getItem('tasks')) {
       var tasks = JSON.parse(localStorage.getItem('tasks'));
       this.setState({
         tasks: tasks
@@ -29,17 +38,17 @@ class App extends Component {
     }
   }
 
-  s4(){
-    return Math.floor((1+Math.random()) * 0x10000).toString(16).substring(1);
+  s4() {
+    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
   }
 
-  generateID(){
+  generateID() {
     return this.s4() + this.s4() + '-' + this.s4() + this.s4() + '-' + this.s4() + this.s4() + '-' + this.s4() + this.s4();
   }
 
   onToggleForm = () => {
-    if(this.state.isDisplayForm && this.state.taskEditing !== null) {
-     //console.log('th1');
+    if (this.state.isDisplayForm && this.state.taskEditing !== null) {
+      //console.log('th1');
       this.setState({
         isDisplayForm: true,
         taskEditing: null
@@ -66,27 +75,27 @@ class App extends Component {
 
   onSubmit = (data) => {
     //console.log(data);
-    var {tasks} = this.state;
-    if(data.id === '') {
-      data.id= this.generateID();
+    var { tasks } = this.state;
+    if (data.id === '') {
+      data.id = this.generateID();
       tasks.push(data);
     } else {
       var index = this.findIndex(data.id);
       tasks[index] = data;
-      
+
     }
     this.setState({
       tasks: tasks,
-      taskEditing : null
+      taskEditing: null
     });
     localStorage.setItem('tasks', JSON.stringify(tasks));
     // console.log(data);
   }
 
   onUpdateStatus = (id) => {
-    var {tasks} = this.state;
+    var { tasks } = this.state;
     var index = this.findIndex(id);
-    if(index !== -1) {
+    if (index !== -1) {
       tasks[index].status = !tasks[index].status;
       // onsole.log('status', index);
       this.setState({
@@ -98,10 +107,10 @@ class App extends Component {
 
 
   findIndex = (id) => {
-    var {tasks} = this.state;
+    var { tasks } = this.state;
     var result = -1;
     tasks.forEach((task, index) => {
-      if(task.id === id){
+      if (task.id === id) {
         result = index;
       }
     });
@@ -109,9 +118,9 @@ class App extends Component {
   }
 
   onDelete = (id) => {
-    var {tasks} = this.state;
-    var index = this.findIndex(id); 
-    if(index !== -1) {
+    var { tasks } = this.state;
+    var index = this.findIndex(id);
+    if (index !== -1) {
       tasks.splice(index, 1);
       // console.log('delete', index);
       this.setState({
@@ -123,24 +132,60 @@ class App extends Component {
   }
 
   onUpdate = (id) => {
-    var {tasks} = this.state;
+    var { tasks } = this.state;
     var index = this.findIndex(id);
     var taskEditing = tasks[index];
     //console.log(taskEditing);
     this.setState({
       taskEditing: taskEditing
     });
-    this.onShowForm(); 
+    this.onShowForm();
   };
 
+  onFilter = (filterName, filterStatus) => {
+    filterStatus = parseInt(filterStatus, 10);
+    this.setState({
+      filter: {
+        name: filterName.toLowerCase(),
+        status: filterStatus
+      }
+    })
+  };
+
+  onSearch = (keyword) => {
+    // console.log(keyword);
+    this.setState({
+      keyword : keyword
+    });
+  }
+
   render() {
-    var {tasks, isDisplayForm, taskEditing} = this.state; // var tasks = this.state.tasks
-    var elmTaskForm = isDisplayForm 
-          ? <TaskForm 
-            onSubmit={this.onSubmit} 
-            onCloseForm={this.onCloseForm}
-            task={taskEditing}
-          /> : '';
+    var { tasks, isDisplayForm, taskEditing, filter, keyword } = this.state; // var tasks = this.state.tasks
+    if (filter) {
+      if (filter.name) {
+        tasks = tasks.filter((task) => {
+          return task.name.toLowerCase().indexOf(filter.name) !== -1;
+        })
+      }
+      tasks = tasks.filter((task) => {
+        if (filter.status === -1) {
+          return task;
+        } else {
+          return task.status === (filter.status === 1 ? true : false);
+        }
+      })
+    }
+    if(keyword) {
+      tasks = tasks.filter((task) => {
+        return task.name.toLowerCase().indexOf(keyword) !== -1;
+      })
+    }
+    var elmTaskForm = isDisplayForm
+      ? <TaskForm
+        onSubmit={this.onSubmit}
+        onCloseForm={this.onCloseForm}
+        task={taskEditing}
+      /> : '';
     return (
       <div className="container">
         <div className="text-center">
@@ -152,24 +197,25 @@ class App extends Component {
             {elmTaskForm}
           </div>
           <div className={isDisplayForm ? "col-xs-8 col-sm-8 col-md-8 col-lg-8" : "col-xs-12 col-sm-12 col-md-12 col-lg-12"}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-primary mr"
               onClick={this.onToggleForm}
             >
               <span className="fa fa-plus mr" />Thêm Công Việc
             </button>
-            <Control />
+            <Control onSearch={this.onSearch} />
             <div className="row mt">
               <div className="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                <TaskList 
-                  tasks={tasks} 
-                  onUpdateStatus={this.onUpdateStatus} 
+                <TaskList
+                  tasks={tasks}
+                  onUpdateStatus={this.onUpdateStatus}
                   onDelete={this.onDelete}
                   onUpdate={this.onUpdate}
+                  onFilter={this.onFilter}
                 />
               </div>
-            </div>  
+            </div>
           </div>
         </div>
       </div>

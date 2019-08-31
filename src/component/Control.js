@@ -9,7 +9,7 @@ class Control extends Component {
         return (
             <React.Fragment>
                 <div className="row mt">
-                    <Search />
+                    <Search onSearch={this.props.onSearch} />
                     <Sort />
                 </div>
             </React.Fragment>
