@@ -26,3 +26,11 @@
   margin-left: 190px; 
   cursor: pointer;
 }
+
+.sort_selected::after {
+  content: '\f00c';
+  font-family: FontAwesome;
+  font-weight: normal;
+  margin: 0 0 0 10px;
+  display: inline-block;
+}
